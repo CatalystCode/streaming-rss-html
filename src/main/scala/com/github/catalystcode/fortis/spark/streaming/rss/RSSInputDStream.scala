@@ -7,15 +7,15 @@ import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.ReceiverInputDStream
 import org.apache.spark.streaming.receiver.Receiver
 
-class RSSInputDStream(val feedURL: URL,
+class RSSInputDStream(feedURLs: Seq[URL],
                       ssc: StreamingContext,
                       storageLevel: StorageLevel,
-                      val pollingPeriodInSeconds: Int = 60)
+                      pollingPeriodInSeconds: Int = 60)
   extends ReceiverInputDStream[RSSEntry](ssc) {
 
   override def getReceiver(): Receiver[RSSEntry] = {
     logDebug("Creating RSS receiver")
-    new RSSReceiver(feedURL, storageLevel, pollingPeriodInSeconds)
+    new RSSReceiver(feedURLs, storageLevel, pollingPeriodInSeconds)
   }
 
 }

@@ -35,6 +35,11 @@ to the caller.
 
 1. Configure your credentials via the `SONATYPE_USER` and `SONATYPE_PASSWORD` environment variables.
 2. Update `version.sbt`
-3. Run `sbt sonatypeOpen "enter staging description here"`
-4. Run `sbt publishSigned`
-5. Run `sbt sonatypeRelease`
+3. Run `sbt` then from the sbt shell, do this:
+
+```
+sonatypeOpen "enter staging description here"
+sbt publishSigned
+sbt sonatypeRelease
+```
+
