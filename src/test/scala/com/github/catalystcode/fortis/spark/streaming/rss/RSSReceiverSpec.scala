@@ -14,7 +14,8 @@ import org.scalatest.{BeforeAndAfter, FlatSpec}
 class RSSReceiverSpec extends FlatSpec with BeforeAndAfter {
 
   it should "call store for single entry" in {
-    val receiver = new RSSReceiver(new URL("http://bing.com"), StorageLevel.MEMORY_ONLY)
+    val url = new URL("http://bing.com")
+    val receiver = new RSSReceiver(Seq(url), StorageLevel.MEMORY_ONLY)
     val receiverSpy = Mockito.spy(receiver)
     val feed = Mockito.mock(classOf[SyndFeed])
     val entry = Mockito.mock(classOf[SyndEntry])
@@ -22,19 +23,20 @@ class RSSReceiverSpec extends FlatSpec with BeforeAndAfter {
 
     Mockito.when(entry.getPublishedDate).thenReturn(publishedDate)
     Mockito.when(feed.getEntries).thenReturn(util.Arrays.asList(entry))
-    Mockito.doReturn(feed, null).when(receiverSpy).fetchFeed()
+    Mockito.doReturn(Seq(Some((url, feed))), null).when(receiverSpy).fetchFeeds()
     Mockito.doNothing().when(receiverSpy).store(any(classOf[RSSEntry]))
 
-    assert(receiverSpy.lastIngestedDate < publishedDate.getTime)
+    assert(receiverSpy.lastIngestedDates.get(url).isEmpty)
     receiverSpy.poll()
-    assert(receiverSpy.lastIngestedDate == publishedDate.getTime)
+    assert(receiverSpy.lastIngestedDates(url) == publishedDate.getTime)
 
-    Mockito.verify(receiverSpy, new Times(1)).fetchFeed()
+    Mockito.verify(receiverSpy, new Times(1)).fetchFeeds()
     Mockito.verify(receiverSpy, new Times(1)).store(any(classOf[RSSEntry]))
   }
 
   it should "store published date of newest entry" in {
-    val receiver = new RSSReceiver(new URL("http://bing.com"), StorageLevel.MEMORY_ONLY)
+    val url = new URL("http://bing.com")
+    val receiver = new RSSReceiver(Seq(url), StorageLevel.MEMORY_ONLY)
     val receiverSpy = Mockito.spy(receiver)
     val feed = Mockito.mock(classOf[SyndFeed])
 
@@ -50,14 +52,14 @@ class RSSReceiverSpec extends FlatSpec with BeforeAndAfter {
       entry0,
       entry1
     ))
-    Mockito.doReturn(feed, null).when(receiverSpy).fetchFeed()
+    Mockito.doReturn(Seq(Some((url, feed))), null).when(receiverSpy).fetchFeeds()
     Mockito.doNothing().when(receiverSpy).store(any(classOf[RSSEntry]))
 
-    assert(receiverSpy.lastIngestedDate < publishedDate0.getTime)
+    assert(receiverSpy.lastIngestedDates.get(url).isEmpty)
     receiverSpy.poll()
-    assert(receiverSpy.lastIngestedDate == publishedDate0.getTime)
+    assert(receiverSpy.lastIngestedDates(url) == publishedDate0.getTime)
 
-    Mockito.verify(receiverSpy, new Times(1)).fetchFeed()
+    Mockito.verify(receiverSpy, new Times(1)).fetchFeeds()
     Mockito.verify(receiverSpy, new Times(2)).store(any(classOf[RSSEntry]))
   }
 

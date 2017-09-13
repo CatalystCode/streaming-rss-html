@@ -10,11 +10,12 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.receiver.Receiver
 
 import scala.collection.JavaConversions._
+import scala.collection.mutable
 
-private[rss] class RSSReceiver(feedURL: URL, storageLevel: StorageLevel, pollingPeriodInSeconds: Int = 3)
+private[rss] class RSSReceiver(feedURLs: Seq[URL], storageLevel: StorageLevel, pollingPeriodInSeconds: Int = 3)
   extends Receiver[RSSEntry](storageLevel) with Logger {
 
-  @volatile private[rss] var lastIngestedDate = Long.MinValue
+  @volatile private[rss] var lastIngestedDates = mutable.Map[URL, Long]()
 
   private var executor: ScheduledThreadPoolExecutor = _
 
@@ -39,52 +40,85 @@ private[rss] class RSSReceiver(feedURL: URL, storageLevel: StorageLevel, polling
     }
   }
 
-  private[rss] def fetchFeed(): SyndFeed = {
-    val reader = new XmlReader(feedURL)
-    new SyndFeedInput().build(reader)
+  private[rss] def fetchFeeds(): Seq[Option[(URL, SyndFeed)]] = {
+    feedURLs.map(url=>{
+      try {
+        val reader = new XmlReader(url)
+        val feed = new SyndFeedInput().build(reader)
+        Some((url, feed))
+      } catch {
+        case e: Exception => {
+          logError(s"Unable to open feed for $url", e)
+          None
+        }
+      }
+    })
   }
 
   private[rss] def poll(): Unit = {
-    fetchFeed().getEntries
-      .filter(entry=>{
-        val date = Math.max(safeDateGetTime(entry.getPublishedDate), safeDateGetTime(entry.getUpdatedDate))
-        logDebug(s"Received RSS entry ${entry.getUri} from date ${date}")
-        date > lastIngestedDate
-      })
-      .map(entry=>new RSSEntry(
-          uri = entry.getUri,
-          title = entry.getTitle,
-          links = entry.getLinks.map(l=>new RSSLink(href = l.getHref, title = l.getTitle)).toList,
-          content = entry.getContents.map(c=> new RSSContent(contentType = c.getType, mode = c.getMode, value = c.getValue)).toList,
-          description = entry.getDescription match {
-            case null => null
-            case d => new RSSContent(
-              contentType = d.getType,
-              mode = d.getMode,
-              value = d.getValue
+    fetchFeeds()
+      .filter(urlfeed=>urlfeed.isDefined)
+      .foreach(urlfeed=>{
+        val url = urlfeed.get._1
+        val feed = urlfeed.get._2
+        val source = RSSFeed(
+          feedType = feed.getFeedType,
+          uri = feed.getUri,
+          title = feed.getTitle,
+          description = feed.getDescription,
+          link = feed.getLink
+        )
+
+        feed.getEntries
+          .filter(entry=>{
+            val date = Math.max(safeDateGetTime(entry.getPublishedDate), safeDateGetTime(entry.getUpdatedDate))
+            logDebug(s"Received RSS entry ${entry.getUri} from date $date")
+            lastIngestedDates.get(url).isEmpty || date > lastIngestedDates(url)
+          })
+          .map(feedEntry=>{
+            val rssEntry = RSSEntry(
+              source = source,
+              uri = feedEntry.getUri,
+              title = feedEntry.getTitle,
+              links = feedEntry.getLinks.map(l => RSSLink(href = l.getHref, title = l.getTitle)).toList,
+              content = feedEntry.getContents.map(c => RSSContent(contentType = c.getType, mode = c.getMode, value = c.getValue)).toList,
+              description = feedEntry.getDescription match {
+                case null => null
+                case d => RSSContent(
+                  contentType = d.getType,
+                  mode = d.getMode,
+                  value = d.getValue
+                )
+              },
+              enclosures = feedEntry.getEnclosures.map(e => RSSEnclosure(url = e.getUrl, enclosureType = e.getType, length = e.getLength)).toList,
+              publishedDate = safeDateGetTime(feedEntry.getPublishedDate),
+              updatedDate = safeDateGetTime(feedEntry.getUpdatedDate),
+              authors = feedEntry.getAuthors.map(a => RSSPerson(name = a.getName, uri = a.getUri, email = a.getEmail)).toList,
+              contributors = feedEntry.getContributors.map(c => RSSPerson(name = c.getName, uri = c.getUri, email = c.getEmail)).toList
             )
-          },
-          enclosures = entry.getEnclosures.map(e=>new RSSEnclosure(url = e.getUrl, enclosureType = e.getType, length = e.getLength)).toList,
-          publishedDate = safeDateGetTime(entry.getPublishedDate),
-          updatedDate = safeDateGetTime(entry.getUpdatedDate),
-          authors = entry.getAuthors.map(a=>new RSSPerson(name = a.getName, uri = a.getUri, email = a.getEmail)).toList,
-          contributors = entry.getContributors.map(c=>new RSSPerson(name = c.getName, uri = c.getUri, email = c.getEmail)).toList
-        ))
-      .foreach(entry=>{
-        store(entry)
-        markStored(entry)
+            store(rssEntry)
+            markStored(rssEntry, url)
+            rssEntry
+          })
       })
   }
 
-  private def markStored(entry: RSSEntry): Unit = {
+  private def markStored(entry: RSSEntry, url: URL): Unit = {
     val date = entry.updatedDate match {
       case 0 => entry.publishedDate
       case _ => entry.updatedDate
     }
-    if (date > lastIngestedDate) {
-      lastIngestedDate = date
+    lastIngestedDates.get(url) match {
+      case Some(lastIngestedDate) =>
+        if (date > lastIngestedDate) {
+          logDebug(s"Updating last ingested date to $date")
+          lastIngestedDates.put(url, date)
+        }
+      case None => {
+        logDebug(s"Updating last ingested date to $date")
+        lastIngestedDates.put(url, date)
+      }
     }
-    logDebug(s"Updating last ingested date to ${date}")
   }
 
   private def safeDateGetTime(date: Date): Long = {

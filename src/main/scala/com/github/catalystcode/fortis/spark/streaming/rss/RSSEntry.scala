@@ -1,6 +1,7 @@
 package com.github.catalystcode.fortis.spark.streaming.rss
 
 case class RSSEntry(
+  source: RSSFeed,
   uri: String,
   title: String,
   links: List[RSSLink],
@@ -13,6 +14,7 @@ case class RSSEntry(
   contributors: List[RSSPerson]
 )
 
+case class RSSFeed(feedType: String, uri: String, title: String, description: String, link: String)
 case class RSSLink(href: String, title: String)
 case class RSSContent(contentType: String, mode: String, value: String)
 case class RSSEnclosure(url: String, enclosureType: String, length: Long)
