@@ -21,7 +21,7 @@ Add to your own project by adding this dependency in your `build.sbt`:
 ```
 libraryDependencies ++= Seq(
   //...
-  "com.github.catalystcode" %% "streaming-rss-html" % "0.0.1",
+  "com.github.catalystcode" %% "streaming-rss-html" % "0.0.3",
   //...
 )
 ```
@@ -39,7 +39,6 @@ to the caller.
 
 ```
 sonatypeOpen "enter staging description here"
-sbt publishSigned
-sbt sonatypeRelease
+publishSigned
+sonatypeRelease
 ```
-

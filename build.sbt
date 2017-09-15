@@ -20,6 +20,7 @@ libraryDependencies ++= Seq(
 
 libraryDependencies ++= Seq(
   "com.rometools" % "rome" % "1.8.0",
+  "org.jsoup" % "jsoup" % "1.10.3",
   "log4j" % "log4j" % "1.2.17"
 )
 
@@ -33,4 +34,3 @@ assemblyMergeStrategy in assembly := {
  case PathList("META-INF", xs @ _*) => MergeStrategy.discard                    
  case x => MergeStrategy.first                                                  
 }                                                                               
-
