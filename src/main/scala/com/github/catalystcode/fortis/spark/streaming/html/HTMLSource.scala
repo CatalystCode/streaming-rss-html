@@ -77,7 +77,7 @@ private[html] class HTMLSource(siteURL: URL,
     }
 
     val anchors = rootDocument.select("a[href]")
-    val childDocuments = anchors match {
+    val childURLs = anchors match {
       case null => Seq()
       case _ => anchors
         .iterator()
@@ -87,21 +87,14 @@ private[html] class HTMLSource(siteURL: URL,
         .map(a=>{
           val href = a.attr("href")
           try {
-            val childURL = href match {
+            val url = href match {
               case urlPattern() => new URL(href)
               case rootPathPattern() => siteURL
               case blankPattern() => siteURL
               case absolutePathPattern() => new URL(s"${siteURL.getProtocol}://$rootHost$rootPortString$href")
               case _ => new URL(s"$siteURL/$href")
             }
-            val childHost = childURL.getHost
-            if (childHost != rootHost) {
-              None
-            }
-            else {
-              val document = connector.connect(childURL).get()
-              Some[(URL, Document)](childURL, document)
-            }
+            Some(url)
           } catch {
             case e: Exception => None
           }
@@ -109,6 +102,17 @@ private[html] class HTMLSource(siteURL: URL,
         .filter(d=>d.isDefined)
         .map(d=>d.get)
     }
+    val childDocuments = childURLs.map(childURL => {
+      if (childURL == siteURL) {
+        None
+      } else if (childURL.getHost != rootHost) {
+        None
+      }
+      else {
+        val document = connector.connect(childURL).get()
+        Some[(URL, Document)](childURL, document)
+      }
+    }).filter(d=>d.isDefined).map(d=>d.get)
     Seq((siteURL, rootDocument)) ++ childDocuments
   }
 
