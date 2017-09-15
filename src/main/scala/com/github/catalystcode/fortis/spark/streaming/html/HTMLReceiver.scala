@@ -3,7 +3,6 @@ package com.github.catalystcode.fortis.spark.streaming.html
 import java.net.URL
 import java.util.concurrent.{ScheduledThreadPoolExecutor, TimeUnit}
 
-import com.github.catalystcode.fortis.spark.streaming.rss.Logger
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.receiver.Receiver
 
