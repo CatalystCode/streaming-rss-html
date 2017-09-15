@@ -13,7 +13,7 @@ import scala.collection.JavaConversions._
 private[html] class HTMLSource(siteURL: URL,
                                maxDepth: Int = 1,
                                requestHeaders: Map[String, String] = Map(),
-                               cacheEditDistanceThreshold: Double = 0.10) extends Serializable {
+                               cacheEditDistanceThreshold: Double = 0.10) extends Serializable with Logger {
 
   private val connectTimeoutMillis: Int = sys.env.getOrElse("HTML_SOURCE_CONNECT_TIMEOUT_MILLIS", "500").toInt
   private val cacheTimeMinutes: Int = sys.env.getOrElse("HTML_SOURCE_CACHE_TIME_MINUTES", "30").toInt
@@ -27,7 +27,7 @@ private[html] class HTMLSource(siteURL: URL,
 
   private[html] class HTMLConnector extends Serializable {
     def connect(url: URL): Connection = {
-      Jsoup.connect(url.toString).timeout(connectTimeoutMillis).headers(requestHeaders)
+      Jsoup.connect(url.toString).timeout(connectTimeoutMillis).headers(requestHeaders).followRedirects(true)
     }
   }
 
@@ -59,7 +59,7 @@ private[html] class HTMLSource(siteURL: URL,
       .map(p => HTMLPage(p._1.toString, p._2.html()))
   }
 
-  private val urlPattern = raw"http[s]://.+".r
+  private val urlPattern = raw"http[s]?://.+".r
   private val rootPathPattern = raw"[/]+".r
   private val absolutePathPattern = raw"[/].+".r
   private val blankPattern = raw"\\s+".r
@@ -69,7 +69,10 @@ private[html] class HTMLSource(siteURL: URL,
       val connection = connector.connect(siteURL)
       Some(connection.get())
     } catch {
-      case e: Exception => None
+      case e: Exception => {
+        logError(s"Unable to fetch document for $siteURL", e)
+        None
+      }
     }
   }
 
