@@ -25,7 +25,7 @@ private[html] class HTMLSource(siteURL: URL,
     cache.cleanUp()
   }
 
-  private[html] class HTMLConnector {
+  private[html] class HTMLConnector extends Serializable {
     def connect(url: URL): Connection = {
       Jsoup.connect(url.toString).timeout(connectTimeoutMillis).headers(requestHeaders)
     }
