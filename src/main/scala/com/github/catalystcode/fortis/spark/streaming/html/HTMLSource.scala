@@ -64,56 +64,71 @@ private[html] class HTMLSource(siteURL: URL,
   private val absolutePathPattern = raw"[/].+".r
   private val blankPattern = raw"\\s+".r
 
+  private[html] def fetchDocument(url: URL): Option[Document] = {
+    try {
+      val connection = connector.connect(siteURL)
+      Some(connection.get())
+    } catch {
+      case e: Exception => None
+    }
+  }
+
   private[html] def unfilteredDocuments(): Seq[(URL,Document)] = {
     val rootHost = siteURL.getHost
     val rootPortString = siteURL.getPort match {
       case -1 => ""
       case _ => s":${siteURL.getPort}"
     }
-    val connection = connector.connect(siteURL)
-    val rootDocument: Document = connection.get()
-    if (maxDepth < 1) {
-      return Seq((siteURL, rootDocument))
-    }
 
-    val anchors = rootDocument.select("a[href]")
-    val childURLs = anchors match {
-      case null => Seq()
-      case _ => anchors
-        .iterator()
-        .toSeq
-        .filter(a=>a.hasText && a.hasAttr("href"))
-        .par
-        .map(a=>{
-          val href = a.attr("href")
-          try {
-            val url = href match {
-              case urlPattern() => new URL(href)
-              case rootPathPattern() => siteURL
-              case blankPattern() => siteURL
-              case absolutePathPattern() => new URL(s"${siteURL.getProtocol}://$rootHost$rootPortString$href")
-              case _ => new URL(s"$siteURL/$href")
-            }
-            Some(url)
-          } catch {
-            case e: Exception => None
+    fetchDocument(siteURL) match {
+      case None => Seq()
+      case Some(rootDocument) => {
+        if (maxDepth < 1) {
+          return Seq((siteURL, rootDocument))
+        }
+
+        val anchors = rootDocument.select("a[href]")
+        val childURLs = anchors match {
+          case null => Seq()
+          case _ => anchors
+            .iterator()
+            .toSeq
+            .filter(a=>a.hasText && a.hasAttr("href"))
+            .par
+            .map(a=>{
+              val href = a.attr("href")
+              try {
+                val url = href match {
+                  case urlPattern() => new URL(href)
+                  case rootPathPattern() => siteURL
+                  case blankPattern() => siteURL
+                  case absolutePathPattern() => new URL(s"${siteURL.getProtocol}://$rootHost$rootPortString$href")
+                  case _ => new URL(s"$siteURL/$href")
+                }
+                Some(url)
+              } catch {
+                case e: Exception => None
+              }
+            })
+            .filter(d=>d.isDefined)
+            .map(d=>d.get)
+        }
+        val childDocuments = childURLs.map(childURL => {
+          if (childURL == siteURL) {
+            None
+          } else if (childURL.getHost != rootHost) {
+            None
           }
-        })
-        .filter(d=>d.isDefined)
-        .map(d=>d.get)
+          else {
+            fetchDocument(childURL) match {
+              case None => None
+              case Some(childDocument) => Some[(URL, Document)](childURL, childDocument)
+            }
+          }
+        }).filter(d=>d.isDefined).map(d=>d.get)
+        Seq((siteURL, rootDocument)) ++ childDocuments
+      }
     }
-    val childDocuments = childURLs.map(childURL => {
-      if (childURL == siteURL) {
-        None
-      } else if (childURL.getHost != rootHost) {
-        None
-      }
-      else {
-        val document = connector.connect(childURL).get()
-        Some[(URL, Document)](childURL, document)
-      }
-    }).filter(d=>d.isDefined).map(d=>d.get)
-    Seq((siteURL, rootDocument)) ++ childDocuments
   }
 
 }
