@@ -9,10 +9,7 @@ import com.rometools.rome.io.{SyndFeedInput, XmlReader}
 import scala.collection.JavaConversions._
 import scala.collection.mutable
 
-private[rss] class RSSSource(feedURLs: Seq[String], requestHeaders: Map[String, String]) extends Serializable {
-
-  val connectTimeout: Int = sys.env.getOrElse("RSS_ON_DEMAND_STREAM_CONNECT_TIMEOUT", "500").toInt
-  val readTimeout: Int = sys.env.getOrElse("RSS_ON_DEMAND_STREAM_READ_TIMEOUT", "1000").toInt
+private[rss] class RSSSource(feedURLs: Seq[String], requestHeaders: Map[String, String], connectTimeout: Int = 1000, readTimeout: Int = 1000) extends Serializable with Logger {
 
   private[rss] var lastIngestedDates = mutable.Map[String, Long]()
 
@@ -80,7 +77,10 @@ private[rss] class RSSSource(feedURLs: Seq[String], requestHeaders: Map[String, 
         val feed = new SyndFeedInput().build(reader)
         Some((url, feed))
       } catch {
-        case e: Exception => None
+        case e: Exception => {
+          logError(s"Unable to fetch ${url}", e)
+          None
+        }
       }
     })
   }

@@ -8,10 +8,17 @@ import org.apache.spark.streaming.receiver.Receiver
 private[rss] class RSSReceiver(feedURLs: Seq[String],
                                requestHeaders: Map[String, String],
                                storageLevel: StorageLevel,
+                               connectTimeout: Int = 1000,
+                               readTimeout: Int = 1000,
                                pollingPeriodInSeconds: Int = 60)
   extends Receiver[RSSEntry](storageLevel) with Logger {
 
-  @volatile private[rss] var source = new RSSSource(feedURLs, requestHeaders)
+  @volatile private[rss] var source = new RSSSource(
+    feedURLs = feedURLs,
+    requestHeaders = requestHeaders,
+    connectTimeout = connectTimeout,
+    readTimeout = readTimeout
+  )
 
   @volatile private var executor: ScheduledThreadPoolExecutor = _
 
