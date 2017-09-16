@@ -14,8 +14,8 @@ class HTMLReceiver(siteURLs: Seq[URL],
                    cacheEditDistanceThreshold: Double = 0.10)
   extends Receiver[HTMLPage](storageLevel) with Logger {
 
-  private var sources: Seq[HTMLSource] = Seq()
-  private var executor: ScheduledThreadPoolExecutor = _
+  @volatile private var sources: Seq[HTMLSource] = Seq()
+  @volatile private var executor: ScheduledThreadPoolExecutor = _
 
   override def onStart(): Unit = {
     sources = siteURLs.map(url => new HTMLSource(url))

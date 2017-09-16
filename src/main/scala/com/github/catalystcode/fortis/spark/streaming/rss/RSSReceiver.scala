@@ -14,7 +14,7 @@ private[rss] class RSSReceiver(feedURLs: Seq[URL],
 
   @volatile private[rss] var source = new RSSSource(feedURLs, requestHeaders)
 
-  private var executor: ScheduledThreadPoolExecutor = _
+  @volatile private var executor: ScheduledThreadPoolExecutor = _
 
   def onStart(): Unit = {
     source.reset()
