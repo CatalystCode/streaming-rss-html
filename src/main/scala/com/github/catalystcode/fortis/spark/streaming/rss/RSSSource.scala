@@ -9,12 +9,12 @@ import com.rometools.rome.io.{SyndFeedInput, XmlReader}
 import scala.collection.JavaConversions._
 import scala.collection.mutable
 
-private[rss] class RSSSource(feedURLs: Seq[URL], requestHeaders: Map[String, String]) extends Serializable {
+private[rss] class RSSSource(feedURLs: Seq[String], requestHeaders: Map[String, String]) extends Serializable {
 
   val connectTimeout: Int = sys.env.getOrElse("RSS_ON_DEMAND_STREAM_CONNECT_TIMEOUT", "500").toInt
   val readTimeout: Int = sys.env.getOrElse("RSS_ON_DEMAND_STREAM_READ_TIMEOUT", "1000").toInt
 
-  private[rss] var lastIngestedDates = mutable.Map[URL, Long]()
+  private[rss] var lastIngestedDates = mutable.Map[String, Long]()
 
   def reset(): Unit = {
     lastIngestedDates.clear()
@@ -70,10 +70,10 @@ private[rss] class RSSSource(feedURLs: Seq[URL], requestHeaders: Map[String, Str
       })
   }
 
-  private[rss] def fetchFeeds(): Seq[Option[(URL, SyndFeed)]] = {
+  private[rss] def fetchFeeds(): Seq[Option[(String, SyndFeed)]] = {
     feedURLs.map(url=>{
       try {
-        val connection = url.openConnection()
+        val connection = new URL(url).openConnection()
         connection.setConnectTimeout(connectTimeout)
         connection.setReadTimeout(readTimeout)
         val reader = new XmlReader(connection, requestHeaders)
@@ -85,7 +85,7 @@ private[rss] class RSSSource(feedURLs: Seq[URL], requestHeaders: Map[String, Str
     })
   }
 
-  private def markStored(entry: RSSEntry, url: URL): Unit = {
+  private def markStored(entry: RSSEntry, url: String): Unit = {
     val date = entry.updatedDate match {
       case 0 => entry.publishedDate
       case _ => entry.updatedDate

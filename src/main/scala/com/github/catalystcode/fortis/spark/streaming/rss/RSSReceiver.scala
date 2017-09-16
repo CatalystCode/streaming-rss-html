@@ -1,12 +1,11 @@
 package com.github.catalystcode.fortis.spark.streaming.rss
 
-import java.net.URL
 import java.util.concurrent.{ScheduledThreadPoolExecutor, TimeUnit}
 
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.receiver.Receiver
 
-private[rss] class RSSReceiver(feedURLs: Seq[URL],
+private[rss] class RSSReceiver(feedURLs: Seq[String],
                                requestHeaders: Map[String, String],
                                storageLevel: StorageLevel,
                                pollingPeriodInSeconds: Int = 60)
@@ -39,9 +38,15 @@ private[rss] class RSSReceiver(feedURLs: Seq[URL],
   }
 
   private[rss] def poll(): Unit = {
-    source.fetchEntries().foreach(entry=>{
-      store(entry)
-    })
+    try {
+      source.fetchEntries().foreach(entry=>{
+        store(entry)
+      })
+    } catch {
+      case e: Exception => {
+        logError("Unable to fetch RSS entries.", e)
+      }
+    }
   }
 
 }

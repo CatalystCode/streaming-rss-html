@@ -11,9 +11,10 @@ object HTMLDemo {
     val conf = new SparkConf().setAppName("RSS Spark Application").setIfMissing("spark.master", "local[*]")
     val sc = new SparkContext(conf)
     val ssc = new StreamingContext(sc, Seconds(durationSeconds))
+    sc.setLogLevel("ERROR")
 
     val urlCSV = args(0)
-    val urls = urlCSV.split(",").map(new URL(_))
+    val urls = urlCSV.split(",")
     val stream = new HTMLInputDStream(
       urls,
       ssc,

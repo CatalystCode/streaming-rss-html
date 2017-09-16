@@ -1,12 +1,11 @@
 package com.github.catalystcode.fortis.spark.streaming.html
 
-import java.net.URL
 import java.util.concurrent.{ScheduledThreadPoolExecutor, TimeUnit}
 
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.receiver.Receiver
 
-class HTMLReceiver(siteURLs: Seq[URL],
+class HTMLReceiver(siteURLs: Seq[String],
                    storageLevel: StorageLevel,
                    maxDepth: Int = 1,
                    pollingPeriodInSeconds: Int = 60,
@@ -40,8 +39,22 @@ class HTMLReceiver(siteURLs: Seq[URL],
   }
 
   private[html] def poll(): Unit = {
-    sources.flatMap(s => s.fetch())
-      .foreach(page => store(page))
+    try {
+      sources.foreach(_.trimCache())
+    } catch {
+      case e: Exception => {
+        logError("Unable to trim caches", e)
+      }
+    }
+
+    try {
+      sources.flatMap(s => s.fetch())
+        .foreach(page => store(page))
+    } catch {
+      case e: Exception => {
+        logError("Unable to fetch from sources.", e)
+      }
+    }
   }
 
 }

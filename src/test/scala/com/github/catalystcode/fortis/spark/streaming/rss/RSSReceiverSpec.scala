@@ -1,6 +1,5 @@
 package com.github.catalystcode.fortis.spark.streaming.rss
 
-import java.net.URL
 import java.util.Date
 
 import org.apache.spark.storage.StorageLevel
@@ -12,7 +11,7 @@ import org.scalatest.{BeforeAndAfter, FlatSpec}
 class RSSReceiverSpec extends FlatSpec with BeforeAndAfter {
 
   it should "call store for each entry" in {
-    val url = new URL("http://bing.com")
+    val url = "http://bing.com"
     val source = Mockito.mock(classOf[RSSSource])
     val receiver = new RSSReceiver(Seq(url), null, StorageLevel.MEMORY_ONLY)
     receiver.source = source
