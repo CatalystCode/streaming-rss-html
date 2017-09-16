@@ -1,13 +1,11 @@
 package com.github.catalystcode.fortis.spark.streaming.html
 
-import java.net.URL
-
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.streaming.dstream.ReceiverInputDStream
 import org.apache.spark.streaming.receiver.Receiver
 
-class HTMLInputDStream(siteURLs: Seq[URL],
+class HTMLInputDStream(siteURLs: Seq[String],
                        ssc: StreamingContext,
                        storageLevel: StorageLevel = StorageLevel.MEMORY_ONLY,
                        maxDepth: Int = 1,

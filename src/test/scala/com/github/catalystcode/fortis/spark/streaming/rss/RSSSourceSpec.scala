@@ -1,6 +1,5 @@
 package com.github.catalystcode.fortis.spark.streaming.rss
 
-import java.net.URL
 import java.util
 import java.util.Date
 
@@ -14,18 +13,18 @@ import scala.collection.mutable
 class RSSSourceSpec extends FlatSpec with BeforeAndAfter {
 
   it should "reset ingest dates to MinValue" in {
-    val url = new URL("http://bing.com")
+    val url = "http://bing.com"
     val source = new RSSSource(Seq(url), Map[String, String]())
 
-    assert(source.lastIngestedDates == mutable.Map[URL, Long]())
+    assert(source.lastIngestedDates == mutable.Map[String, Long]())
     source.reset()
-    assert(source.lastIngestedDates == mutable.Map[URL, Long](
+    assert(source.lastIngestedDates == mutable.Map[String, Long](
       url -> Long.MinValue
     ))
   }
 
   it should "return a single entry for rss feed" in {
-    val url = new URL("http://bing.com")
+    val url = "http://bing.com"
     val source = new RSSSource(Seq(url), Map[String, String]())
     val sourceSpy = Mockito.spy(source)
 
@@ -65,7 +64,7 @@ class RSSSourceSpec extends FlatSpec with BeforeAndAfter {
   }
 
   it should "store published date of newest entry" in {
-    val url = new URL("http://bing.com")
+    val url = "http://bing.com"
     val source = new RSSSource(Seq(url), Map[String, String]())
     val sourceSpy = Mockito.spy(source)
 

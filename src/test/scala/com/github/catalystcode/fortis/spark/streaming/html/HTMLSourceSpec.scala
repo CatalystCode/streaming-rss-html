@@ -1,7 +1,5 @@
 package com.github.catalystcode.fortis.spark.streaming.html
 
-import java.net.URL
-
 import org.jsoup.Connection
 import org.jsoup.nodes.{Document, Element}
 import org.mockito.{ArgumentMatchers, Mockito}
@@ -11,7 +9,7 @@ import org.scalatest.{BeforeAndAfter, FlatSpec}
 class HTMLSourceSpec extends FlatSpec with BeforeAndAfter with MockitoSugar {
 
   it should "return a single entry for page without any links" in {
-    val url = new URL("http://bing.com")
+    val url = "http://bing.com"
     val source = new HTMLSource(url)
     source.connector = mock[source.HTMLConnector]
 
@@ -32,6 +30,18 @@ class HTMLSourceSpec extends FlatSpec with BeforeAndAfter with MockitoSugar {
 
     val documents = source.fetch()
     assert(documents == Seq(HTMLPage(url.toString, html)))
+  }
+
+  it should "remove expired cache documents" in {
+    val url = "http://bing.com"
+    val source = new HTMLSource(url)
+    val document = mock[Document]
+    source.cache.put(url, (document, Long.MinValue))
+    source.cache.put(url, (document, Long.MaxValue))
+    source.trimCache()
+    assert(source.cache == Map(
+      url -> (document, Long.MaxValue)
+    ))
   }
 
 }

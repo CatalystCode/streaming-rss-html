@@ -1,5 +1,3 @@
-import java.net.URL
-
 import com.github.catalystcode.fortis.spark.streaming.rss.RSSInputDStream
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.storage.StorageLevel
@@ -12,14 +10,15 @@ object RSSDemo {
     val conf = new SparkConf().setAppName("RSS Spark Application").setIfMissing("spark.master", "local[*]")
     val sc = new SparkContext(conf)
     val ssc = new StreamingContext(sc, Seconds(durationSeconds))
+    sc.setLogLevel("ERROR")
 
     val urlCSV = args(0)
-    val urls = urlCSV.split(",").map(new URL(_))
+    val urls = urlCSV.split(",")
     val stream = new RSSInputDStream(urls, Map[String, String](), ssc, StorageLevel.MEMORY_ONLY, pollingPeriodInSeconds = durationSeconds)
     stream.foreachRDD(rdd=>{
       val spark = SparkSession.builder().appName(sc.appName).getOrCreate()
       import spark.sqlContext.implicits._
-      rdd.toDS().show(100)
+      rdd.toDS().show()
     })
 
     // run forever
