@@ -29,7 +29,7 @@ private[rss] class RSSSource(feedURLs: Seq[String], requestHeaders: Map[String, 
 
         val source = RSSFeed(
           feedType = feed.getFeedType,
-          uri = feed.getUri,
+          uri = url,
           title = feed.getTitle,
           description = feed.getDescription,
           link = feed.getLink
