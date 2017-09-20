@@ -41,7 +41,7 @@ class RSSSourceSpec extends FlatSpec with BeforeAndAfter {
     assert(source.lastIngestedDates(url) == publishedDate.getTime)
     assert(entries0 == Seq(
       RSSEntry(
-        RSSFeed(null,null,null,null,null),
+        RSSFeed(null,"http://bing.com",null,null,null),
         null,
         null,
         List(),
@@ -88,7 +88,7 @@ class RSSSourceSpec extends FlatSpec with BeforeAndAfter {
     assert(source.lastIngestedDates(url) == publishedDate0.getTime)
     assert(entries == Seq(
       RSSEntry(
-        RSSFeed(null,null,null,null,null),
+        RSSFeed(null,"http://bing.com",null,null,null),
         null,
         null,
         List(),
@@ -101,7 +101,7 @@ class RSSSourceSpec extends FlatSpec with BeforeAndAfter {
         List()
       ),
       RSSEntry(
-        RSSFeed(null,null,null,null,null),
+        RSSFeed(null,"http://bing.com",null,null,null),
         null,
         null,
         List(),
