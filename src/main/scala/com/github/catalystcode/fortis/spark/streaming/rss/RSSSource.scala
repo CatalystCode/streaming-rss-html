@@ -3,7 +3,7 @@ package com.github.catalystcode.fortis.spark.streaming.rss
 import java.net.URL
 import java.util.Date
 
-import com.rometools.rome.feed.synd.SyndFeed
+import com.rometools.rome.feed.synd.{SyndEntry, SyndFeed}
 import com.rometools.rome.io.{SyndFeedInput, XmlReader}
 
 import scala.collection.JavaConversions._
@@ -18,6 +18,16 @@ private[rss] class RSSSource(feedURLs: Seq[String], requestHeaders: Map[String, 
     feedURLs.foreach(url=>{
       lastIngestedDates.put(url, Long.MinValue)
     })
+  }
+
+  def getLinks(feedEntry: SyndEntry): scala.List[RSSLink] = {
+    val link = feedEntry.getLink
+    val transformedLink = if (link == null) List() else List(RSSLink(href = link, title = ""))
+
+    val links = feedEntry.getLinks
+    val transformedLinks =  if (links == null) List() else links.map(l => RSSLink(href = l.getHref, title = l.getTitle)).toList
+
+    transformedLink ++ transformedLinks
   }
 
   def fetchEntries(): Seq[RSSEntry] = {
@@ -45,7 +55,7 @@ private[rss] class RSSSource(feedURLs: Seq[String], requestHeaders: Map[String, 
               source = source,
               uri = feedEntry.getUri,
               title = feedEntry.getTitle,
-              links = feedEntry.getLinks.map(l => RSSLink(href = l.getHref, title = l.getTitle)).toList,
+              links = getLinks(feedEntry),
               content = feedEntry.getContents.map(c => RSSContent(contentType = c.getType, mode = c.getMode, value = c.getValue)).toList,
               description = feedEntry.getDescription match {
                 case null => null
