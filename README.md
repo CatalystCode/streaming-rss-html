@@ -21,7 +21,7 @@ Add to your own project by adding this dependency in your `build.sbt`:
 ```
 libraryDependencies ++= Seq(
   //...
-  "com.github.catalystcode" %% "streaming-rss-html" % "1.0.1",
+  "com.github.catalystcode" %% "streaming-rss-html" % "1.0.2",
   //...
 )
 ```
