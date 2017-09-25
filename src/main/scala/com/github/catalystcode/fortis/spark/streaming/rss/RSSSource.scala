@@ -109,7 +109,7 @@ private[rss] class RSSSource(feedURLs: Seq[String], requestHeaders: Map[String, 
   }
 
   private def safeDateGetTime(date: Date): Long = {
-    Option(date).map(_.getTime).getOrElse(0)
+    Option(date).getOrElse(new Date()).getTime
   }
 
 }
